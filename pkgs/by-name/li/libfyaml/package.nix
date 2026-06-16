@@ -29,6 +29,26 @@ stdenv.mkDerivation (finalAttrs: {
       url = "https://github.com/pantoniou/libfyaml/commit/9192deaac095f9881cc1e5756dede683f36b09d6.diff";
       hash = "sha256-cNL9wQtxIRg/ShZLJP4qHYNFRrYo9kRG+/U+3FiUeaI=";
     })
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isDarwin [
+    # Darwin: configure's AC_SEARCH_LIBS([trunc],[m]) resolves to "none required"
+    # (trunc is in libc), which leaked verbatim into LIBM and reached clang as
+    # bare `none required` args, breaking appstream/zenity. Upstream fix, merged
+    # to nixpkgs staging in #515614 but not yet on master.
+    #
+    # Gate on Darwin: the bug is in Darwin's configure path only, so on Linux
+    # these patches are a functional no-op but still change libfyaml's hash,
+    # which would force a from-source rebuild of its whole reverse-closure
+    # (appstream -> zenity -> sdl -> ffmpeg -> chromium) that the binary cache
+    # already has. Keeping Linux bit-identical to upstream keeps it cached.
+    (fetchpatch {
+      url = "https://github.com/pantoniou/libfyaml/commit/24b18e7363b336962fe160c1dc05ca57ba95783c.diff";
+      hash = "sha256-g5QKI4HuS8MEQ9ddIQNC0j+28Dh9zLAp5RaZX5SWBHk=";
+    })
+    (fetchpatch {
+      url = "https://github.com/pantoniou/libfyaml/commit/9f2492ca27bb1fda64f2b12edc2da17406208b93.diff";
+      hash = "sha256-E4wS+P7R3VGrBpD7swWMMi/QPTF+9rzAeEyxhbmdiwk=";
+    })
   ];
 
   nativeBuildInputs = [
