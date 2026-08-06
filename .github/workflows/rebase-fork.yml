@@ -5,22 +5,36 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '51 2 * * 0'
+concurrency:
+  group: rebase-fork
 jobs:
   rebase-branches:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0 # otherwise, you will fail to push refs to dest repo
       - name: Git rebase
-        env:
-          GH_TOKEN: ${{ secrets.PAT }}
         run: |
           git fetch https://github.com/NixOS/nixpkgs nixos-unstable:nixos-unstable
-          git config --global user.email "joerg@thalheim.io"
-          git config --global user.name "Jörg Thalheim"
+          git config --global user.email "67085791+mulatta@users.noreply.github.com"
+          git config --global user.name "mulatta"
           git rebase nixos-unstable
-          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" main
+      - name: Create rebase token
+        id: rebase-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.NIXPKGS_REBASE_APP_ID }}
+          private-key: ${{ secrets.NIXPKGS_REBASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
+      - name: Push rebased branch
+        env:
+          GH_TOKEN: ${{ steps.rebase-token.outputs.token }}
+        run: |
+          git push --force-with-lease=main:${GITHUB_SHA} \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            main
