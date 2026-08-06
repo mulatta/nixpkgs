@@ -20,7 +20,7 @@ jobs:
           GH_TOKEN: ${{ secrets.PAT }}
         run: |
           git fetch https://github.com/NixOS/nixpkgs nixos-unstable:nixos-unstable
-          git config --global user.email "joerg@thalheim.io"
-          git config --global user.name "Jörg Thalheim"
+          git config --global user.email "67085791+mulatta@users.noreply.github.com"
+          git config --global user.name "mulatta"
           git rebase nixos-unstable
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" main
